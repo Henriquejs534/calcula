@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#17152b">
+  <title>Calculadora Pixel</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #17152b;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 16px 16px;
+      color: white;
+      font-family: "Courier New", monospace;
+    }
+
+    .calculadora {
+      width: 100%;
+      max-width: 460px;
+      padding: 18px;
+      background: #292641;
+      border: 4px solid #090817;
+      box-shadow: 0 8px 0 #090817, 8px 12px 0 #0004;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      color: #f5d76e;
+      font-weight: bold;
+      letter-spacing: 3px;
+    }
+
+    .estrela {
+      color: #ff79a8;
+      font-size: 24px;
+    }
+
+    .visor {
+      height: 135px;
+      margin-bottom: 18px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      text-align: right;
+      background: #101522;
+      border: 4px solid #090817;
+      box-shadow: inset 0 0 0 3px #222b3b;
+    }
+
+    #operacao {
+      min-height: 24px;
+      overflow: hidden;
+      color: #91a6bb;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+
+    #resultado {
+      overflow: hidden;
+      color: #d5ff9f;
+      font-size: clamp(36px, 10vw, 54px);
+      font-weight: bold;
+      text-shadow: 3px 3px #486b54;
+      white-space: nowrap;
+    }
+
+    .botoes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      min-width: 0;
+      height: 72px;
+      border: 4px solid #090817;
+      border-radius: 0;
+      background: #45415f;
+      color: white;
+      box-shadow: 0 6px 0 #090817;
+      font: bold 24px "Courier New", monospace;
+      touch-action: manipulation;
+    }
+
+    button:active {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #090817;
+    }
+
+    .funcao {
+      background: #58758b;
+    }
+
+    .operador {
+      background: #ed8b58;
+      color: #241527;
+    }
+
+    .igual {
+      background: #a6d96a;
+      color: #17251b;
+    }
+
+    .zero {
+      grid-column: span 2;
+    }
+
+    .rodape {
+      margin-top: 18px;
+      color: #aaa6c4;
+      text-align: center;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    @media (max-height: 650px) {
+      .calculadora {
+        padding: 12px;
+      }
+
+      .visor {
+        height: 100px;
+        margin-bottom: 14px;
+      }
+
+      button {
+        height: 55px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="calculadora">
+    <div class="topo">
+      <span>PIXEL CALC</span>
+      <span class="estrela">✦</span>
+    </div>
+
+    <div class="visor">
+      <div id="operacao"></div>
+      <div id="resultado">0</div>
+    </div>
+
+    <div class="botoes">
+      <button class="funcao" onclick="limpar()">AC</button>
+      <button class="funcao" onclick="mudarSinal()">±</button>
+      <button class="funcao" onclick="porcentagem()">%</button>
+      <button class="operador" onclick="escolherOperador('÷')">÷</button>
+
+      <button onclick="digitar('7')">7</button>
+      <button onclick="digitar('8')">8</button>
+      <button onclick="digitar('9')">9</button>
+      <button class="operador" onclick="escolherOperador('×')">×</button>
+
+      <button onclick="digitar('4')">4</button>
+      <button onclick="digitar('5')">5</button>
+      <button onclick="digitar('6')">6</button>
+      <button class="operador" onclick="escolherOperador('−')">−</button>
+
+      <button onclick="digitar('1')">1</button>
+      <button onclick="digitar('2')">2</button>
+      <button onclick="digitar('3')">3</button>
+      <button class="operador" onclick="escolherOperador('+')">+</button>
+
+      <button class="zero" onclick="digitar('0')">0</button>
+      <button onclick="decimal()">.</button>
+      <button class="igual" onclick="calcular()">=</button>
+    </div>
+
+    <div class="rodape">★ CALCULADORA 8-BIT ★</div>
+  </main>
+
+  <script>
+    var valorAtual = "0";
+    var valorAnterior = null;
+    var operador = null;
+    var novoNumero = false;
+    var resultadoCongelado = false;
+
+    var visorResultado = document.getElementById("resultado");
+    var visorOperacao = document.getElementById("operacao");
+
+    function atualizarVisor() {
+      visorResultado.textContent = valorAtual;
+    }
+
+    function formatar(numero) {
+      if (!Number.isFinite(numero)) {
+        return "Erro";
+      }
+
+      return String(Number.parseFloat(numero.toPrecision(11)));
+    }
+
+    function digitar(numero) {
+      if (valorAtual === "Erro" || novoNumero || resultadoCongelado) {
+        valorAtual = numero;
+        novoNumero = false;
+
+        if (resultadoCongelado && operador === null) {
+          visorOperacao.textContent = "";
+        }
+
+        resultadoCongelado = false;
+      } else if (valorAtual === "0") {
+        valorAtual = numero;
+      } else if (valorAtual.length < 12) {
+        valorAtual += numero;
+      }
+
+      atualizarVisor();
+    }
+
+    function decimal() {
+      if (valorAtual === "Erro" || novoNumero || resultadoCongelado) {
+        valorAtual = "0.";
+        novoNumero = false;
+
+        if (resultadoCongelado && operador === null) {
+          visorOperacao.textContent = "";
+        }
+
+        resultadoCongelado = false;
+      } else if (valorAtual.indexOf(".") === -1) {
+        valorAtual += ".";
+      }
+
+      atualizarVisor();
+    }
+
+    function escolherOperador(novoOperador) {
+      if (valorAtual === "Erro") {
+        return;
+      }
+
+      if (operador !== null && !novoNumero) {
+        calcular();
+      }
+
+      valorAnterior = Number(valorAtual);
+      operador = novoOperador;
+      novoNumero = true;
+      resultadoCongelado = false;
+
+      visorOperacao.textContent = formatar(valorAnterior) + " " + operador;
+    }
+
+    function calcular() {
+      if (operador === null || valorAnterior === null) {
+        return;
+      }
+
+      var segundoValor = Number(valorAtual);
+      var resultado;
+
+      if (operador === "+") {
+        resultado = valorAnterior + segundoValor;
+      } else if (operador === "−") {
+        resultado = valorAnterior - segundoValor;
+      } else if (operador === "×") {
+        resultado = valorAnterior * segundoValor;
+      } else if (operador === "÷") {
+        resultado = segundoValor === 0 ? NaN : valorAnterior / segundoValor;
+      }
+
+      visorOperacao.textContent =
+        formatar(valorAnterior) + " " + operador + " " +
+        formatar(segundoValor) + " =";
+
+      valorAtual = formatar(resultado);
+      valorAnterior = null;
+      operador = null;
+      novoNumero = true;
+      resultadoCongelado = true;
+
+      atualizarVisor();
+    }
+
+    function limpar() {
+      valorAtual = "0";
+      valorAnterior = null;
+      operador = null;
+      novoNumero = false;
+      resultadoCongelado = false;
+      visorOperacao.textContent = "";
+
+      atualizarVisor();
+    }
+
+    function mudarSinal() {
+      if (valorAtual === "0" || valorAtual === "Erro") {
+        return;
+      }
+
+      valorAtual = String(Number(valorAtual) * -1);
+      resultadoCongelado = false;
+      atualizarVisor();
+    }
+
+    function porcentagem() {
+      if (valorAtual === "Erro") {
+        return;
+      }
+
+      valorAtual = formatar(Number(valorAtual) / 100);
+      resultadoCongelado = false;
+      atualizarVisor();
+    }
+  </script>
+</body>
+</html>
